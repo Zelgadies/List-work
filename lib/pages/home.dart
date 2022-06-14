@@ -67,7 +67,7 @@ class _HomeState extends State<Home> {
                               setState(() { DatabaseHelper.instance.remove(grocery.id!); });
                             },
                           ),
-                        onTap: () {   //возвращает строку наверх в зану набора
+                        onTap: () {   
                           showDialog(context: context, builder: (BuildContext context){
                             return AlertDialog( //какое конкретно окно мы хотим чтобы показывалось
                               title: Text('Изменить элемент'),
@@ -75,7 +75,7 @@ class _HomeState extends State<Home> {
                                 controller: textController,
                               ),
                               actions: [
-                                ElevatedButton(onPressed: () async {
+                                ElevatedButton(onPressed: () async { //тут кусок кода который должен изменять элемент, но не могу понять почему не работает)
 
      await DatabaseHelper.instance.update(
         Grocery(id: selectedId, name: textController.text),
