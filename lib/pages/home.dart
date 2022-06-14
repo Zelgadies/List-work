@@ -21,34 +21,11 @@ class _HomeState extends State<Home> {
   final textController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-
+  void dispose() {
+    textController.dispose();
+    super.dispose();
   }
 
-  void _menuOpen(){
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (BuildContext context) {
-        return Scaffold(
-          appBar: AppBar(title: Text('Меню')),
-          body: Row (
-            children: [
-              ElevatedButton(
-                  onPressed:  (){
-                    Navigator.pop(context);
-                    Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-              },
-                  child: Text('На главную страницу')
-              ),
-        Padding(padding: EdgeInsets.only(left: 15)),
-        Text ('Просто меню')
-            ],
-          )
-        );
-      }
-      )
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,12 +46,10 @@ class _HomeState extends State<Home> {
             future: DatabaseHelper.instance.getGroceries(),
             builder: (BuildContext context,
                 AsyncSnapshot<List<Grocery>> snapshot) {
-              if (!snapshot.hasData) {
-                return Center(child: Text('Loading...'));
+              if (snapshot.data!.isEmpty) {
+                return Center(child: Text('пустой лист'));
               }
-              return snapshot.data!.isEmpty
-                  ? Center(child: Text('пустой лист'))
-                  :ListView(
+              return ListView(
                 children: snapshot.data!.map((grocery) {
                   return Center(
                     child: Card(
@@ -83,6 +58,35 @@ class _HomeState extends State<Home> {
                           : Colors.white,
                       child: ListTile(
                         title: Text(grocery.name, style: TextStyle(color: Colors.green)),
+                          trailing: IconButton(
+                            icon: Icon (
+                              Icons.delete_sweep,
+                              color: Colors.black87,
+                            ),
+                            onPressed: () {
+                              setState(() { DatabaseHelper.instance.remove(grocery.id!); });
+                            },
+                          ),
+                        onTap: () {   //возвращает строку наверх в зану набора
+                          showDialog(context: context, builder: (BuildContext context){
+                            return AlertDialog( //какое конкретно окно мы хотим чтобы показывалось
+                              title: Text('Изменить элемент'),
+                              content: TextField(
+                                controller: textController,
+                              ),
+                              actions: [
+                                ElevatedButton(onPressed: () async {
+
+     await DatabaseHelper.instance.update(
+        Grocery(id: selectedId, name: textController.text),
+      );
+
+                                }, child: Text('изменить'))
+                              ],
+                            );
+                          }
+                           );
+                        },
                       ),
                     ),
                   );
@@ -117,7 +121,7 @@ class _HomeState extends State<Home> {
                 }, child: Text('Добавить'))
               ],
             );
-          }); //контекст говоритт о том что мы запускаем диалоговое окно на этой же странице
+          }); //контекст говорит о том что мы запускаем диалоговое окно на этой же странице
         },
         child: Icon(
           Icons.add_box,
@@ -126,7 +130,33 @@ class _HomeState extends State<Home> {
       ),
     );
   }
+
+
+  void _menuOpen(){
+    Navigator.of(context).push(
+        MaterialPageRoute(builder: (BuildContext context) {
+          return Scaffold(
+              appBar: AppBar(title: Text('Меню')),
+              body: Row (
+                children: [
+                  ElevatedButton(
+                      onPressed:  (){
+                        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+                      },
+                      child: Text('На главную страницу')
+                  ),
+                  Padding(padding: EdgeInsets.only(left: 15)),
+                  Text ('Просто меню')
+                ],
+              )
+          );
+        }
+        )
+    );
+  }
 }
+
+
 
 class Grocery {   //создание базы данных
   final int? id;
@@ -167,7 +197,7 @@ class DatabaseHelper {
   }
 
   FutureOr<void> onCreate(Database db, int version) async {
-    await db.execute(''''
+    await db.execute('''
     CREATE TABLE groceries(
     id INTEGER PRIMARY KEY,
     name TEXT
